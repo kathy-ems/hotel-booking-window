@@ -26,6 +26,11 @@ $ set -o allexport; source .env; set +o allexport
 $ python3 main.py
 ```
 
+or use the shell script
+
+```
+$ ./run.sh
+```
 
 ### Troubleshooting
 Error: Selenium modual is not installed

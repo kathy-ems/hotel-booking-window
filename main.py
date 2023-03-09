@@ -1,11 +1,17 @@
+from time import sleep
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import smtplib
 import os
 from dotenv import load_dotenv
 from email.message import EmailMessage
+
+load_dotenv()
 
 # Set up the email parameters
 EMAIL_ADDRESS = os.environ.get('EMAIL')
@@ -27,7 +33,17 @@ try:
     print('Logged in successfully')
     try:
         # Set up the Chrome driver
-        driver = webdriver.Chrome()
+        options = Options()
+        # comment out this line to see the process in chrome
+        options.add_argument('--headless')
+
+        driver = webdriver.Chrome(
+          service=Service(
+            ChromeDriverManager()
+                          .install()
+          ),
+          options=options
+        )
 
         # Navigate to the Marriott homepage
         driver.get("https://www.marriott.com/default.mi")
@@ -36,22 +52,25 @@ try:
         wait = WebDriverWait(driver, 5)
         wait.until(EC.presence_of_element_located((By.CLASS_NAME, "m-header__logo-icon")))
 
-        # Find the check-in date input field and enter the desired date (April 8, 2023)
+        # Find the check-in date input field
         checkin_field = driver.find_element(By.CLASS_NAME, "search__calendar-value")
         checkin_field.click()
+        sleep(1)
+        
+        # Find the desired month
         def find_desired_month(driver, desired_month):
             global furthest_booking_month
             months_in_view = driver.find_elements(By.CLASS_NAME, "DayPicker-Caption")
             for month in months_in_view:
+                furthest_booking_month = month.text
                 if desired_month in month.text.upper():
                     print("Found the desired month:", desired_month)
                     return True
             else:
-                furthest_booking_month = month.text
-                # if not correct month, navigate to next month
-                month_picker = driver.find_element(By.CLASS_NAME, "DayPicker-NavButton--next")
                 try:
+                    # if not correct month, navigate to next month
                     WebDriverWait(driver, 2).until(EC.element_to_be_clickable((By.CLASS_NAME, "DayPicker-NavButton--next")))
+                    month_picker = driver.find_element(By.CLASS_NAME, "DayPicker-NavButton--next")
                     month_picker.click()
                     return False
                 except:
@@ -65,7 +84,7 @@ try:
         # See if desired Date is available (April 8, 2024)
         desired_date = "Mon Apr 02 2024"
         date_elements = driver.find_elements(By.CSS_SELECTOR, 'div[aria-label]')
-        print(furthest_booking_month)
+
         # loop through each date element and check if it matches the desired date
         for date_element in date_elements:
             date_string = date_element.get_attribute('aria-label')
